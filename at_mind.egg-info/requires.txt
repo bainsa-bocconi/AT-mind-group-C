@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic>=2
+pandas
+sqlalchemy
+psycopg2-binary
+pgvector
+python-dotenv
+httpx
+pytest

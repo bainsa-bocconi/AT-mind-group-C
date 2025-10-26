@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: at-mind
+Version: 0.1.0
+Requires-Python: >=3.11
+License-File: LICENSE
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: pydantic>=2
+Requires-Dist: pandas
+Requires-Dist: sqlalchemy
+Requires-Dist: psycopg2-binary
+Requires-Dist: pgvector
+Requires-Dist: python-dotenv
+Requires-Dist: httpx
+Requires-Dist: pytest
+Dynamic: license-file
