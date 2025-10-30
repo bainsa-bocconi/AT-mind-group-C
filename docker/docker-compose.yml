@@ -8,6 +8,12 @@ services:
     container_name: ollamaserver
     ports:
       - "11434:11434"
+    environment:
+      - OLLAMA_MODEL=llama3.2:3b
     volumes:
-      - ollama_models:/root/.ollama
+      - ollama_models:/root/.ollamaimage
     restart: unless-stopped
+
+
+volumes:
+  ollama_models:
