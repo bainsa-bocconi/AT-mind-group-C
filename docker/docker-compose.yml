@@ -11,9 +11,10 @@ services:
     environment:
       - OLLAMA_MODEL=llama3.2:3b
     volumes:
-      - ollama_models:/root/.ollamaimage
+      - ollama_models:/root/.ollama
     restart: unless-stopped
 
 
 volumes:
   ollama_models:
+
