@@ -10,4 +10,4 @@ VOLUME ["/root/.ollama"]
 # Set up environment variable (can be overridden by docker-compose)
 ENV OLLAMA_HOST=0.0.0.0
 ENV OLLAMA_MODEL=llama3.2:3b
-CMD ["bash", "-lc", "ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-llama3.2:3b} && wait"]
+CMD ["sh", "-lc", "ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-llama3.2:3b} && wait"]
