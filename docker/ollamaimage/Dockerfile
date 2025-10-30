@@ -5,11 +5,9 @@ FROM ollama/ollama:latest
 EXPOSE 11434
 
 # Optional: create a persistent volume mount point for model storage
-VOLUME ["/root/.ollama"]
+VOLUME ["/root/.ollamaimage"]
 
 # Set up environment variable (can be overridden by docker-compose)
 ENV OLLAMA_HOST=0.0.0.0
-
-# This is the default entrypoint for the Ollama base image,
-# so you usually don’t need to redefine it — but it’s explicit here:
-CMD ["serve"]
+ENV OLLAMA_MODEL=llama3.2:3b
+CMD ["bash", "-lc", "ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-llama3.2:3b} && wait"]
