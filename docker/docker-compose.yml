@@ -15,8 +15,8 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
       interval: 5s
-      timeout: 2s
-      retries: 20
+      timeout: 20s
+      retries: 50
 
   app:
     build:
