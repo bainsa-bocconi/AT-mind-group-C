@@ -1,5 +1,4 @@
-version: "3.9"
-
+# docker/docker-compose.yml
 services:
   ollama:
     build:
@@ -15,12 +14,13 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
-      interval: 3s
+      interval: 5s
       timeout: 2s
-      retries: 15
-app:
+      retries: 20
+
+  app:
     build:
-      context: ..          # go up to repo root where the app Dockerfile lives
+      context: ..                 # go up to repo root to include pyproject.toml and at_mind/
       dockerfile: ./docker/Dockerfile
     container_name: at-mind-app
     depends_on:
@@ -34,5 +34,4 @@ app:
 
 volumes:
   ollama_models:
-
 
