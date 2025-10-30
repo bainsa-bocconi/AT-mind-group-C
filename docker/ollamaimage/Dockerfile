@@ -9,4 +9,4 @@ ENV OLLAMA_MODEL=llama3.2:3b
 
 # Replace the image's default ENTRYPOINT ["ollama"] so CMD runs under a shell.
 ENTRYPOINT ["/bin/sh", "-lc"]
-CMD ["ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-llama3.2:3b} && wait"]
+CMD ["ollama serve & sleep 5 && ollama run ${OLLAMA_MODEL:-llama3.2:3b}"]
