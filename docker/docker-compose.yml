@@ -21,7 +21,7 @@ services:
 app:
     build:
       context: ..          # go up to repo root where the app Dockerfile lives
-      dockerfile: Dockerfile
+      dockerfile: ./docker/Dockerfile
     container_name: at-mind-app
     depends_on:
       ollama:
