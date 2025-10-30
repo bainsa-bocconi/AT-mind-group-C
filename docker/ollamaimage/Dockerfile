@@ -5,7 +5,7 @@ FROM ollama/ollama:latest
 EXPOSE 11434
 
 # Optional: create a persistent volume mount point for model storage
-VOLUME ["/root/.ollamaimage"]
+VOLUME ["/root/.ollama"]
 
 # Set up environment variable (can be overridden by docker-compose)
 ENV OLLAMA_HOST=0.0.0.0
