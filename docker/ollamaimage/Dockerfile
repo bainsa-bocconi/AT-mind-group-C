@@ -1,14 +1,12 @@
 # syntax=docker/dockerfile:1.7
 FROM ollama/ollama:latest
 
-# Expose Ollama’s API port
 EXPOSE 11434
-
-# Optional: create a persistent volume mount point for model storage
 VOLUME ["/root/.ollama"]
 
-# Set up environment variable (can be overridden by docker-compose)
 ENV OLLAMA_HOST=0.0.0.0
 ENV OLLAMA_MODEL=llama3.2:3b
-EXPOSE ["/bin/sh", "-lc"]
+
+# Replace the image's default ENTRYPOINT ["ollama"] so CMD runs under a shell.
+ENTRYPOINT ["/bin/sh", "-lc"]
 CMD ["ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-llama3.2:3b} && wait"]
