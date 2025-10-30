@@ -13,8 +13,26 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+app:
+    build:
+      context: ..          # go up to repo root where the app Dockerfile lives
+      dockerfile: Dockerfile
+    container_name: at-mind-app
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 
 volumes:
   ollama_models:
+
 
