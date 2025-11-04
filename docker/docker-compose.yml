@@ -1,6 +1,7 @@
 # docker/docker-compose.yml
 services:
   ollama:
+  profiles: ["cpu"]
     build:
       context: ./ollamaimage
       dockerfile: Dockerfile
@@ -18,10 +19,39 @@ services:
       timeout: 20s
       retries: 50
 
-  app:
+  app_cpu:
+    profiles: ["cpu"]
     build:
-      context: ..                 # go up to repo root to include pyproject.toml and at_mind/
+      context: ..             
       dockerfile: ./docker/Dockerfile
+    container_name: at-mind-app
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    
+  vLLM:
+    profiles: ["gpu"]
+    build:
+      context: ..
+      dockerfile: docker/vllm/Dockerfile #STILL NEED TO CREATE THIS DOCKERFILE
+    ports:
+      - "8000:8000"
+    device_requests:
+      - driver: nvidia
+        count: all
+        capabilities: ["gpu"]
+
+
+  app_gpu:
+    profiles: ["gpu"]
+    build:
+      context: ..             
+      dockerfile: ./at_mind/fastapi/Dockerfile #STILL NEED TO CREATE THIS DOCKERFILE
     container_name: at-mind-app
     depends_on:
       ollama:
@@ -34,4 +64,5 @@ services:
 
 volumes:
   ollama_models:
+
 
