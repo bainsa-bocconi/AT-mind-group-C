@@ -1,0 +1,8 @@
+Obiezione: {{objection}}
+Contesto:
+{{context}}
+Restituisci:
+1) risposta breve al cliente;
+2) domanda di follow-up;
+3) proposta alternativa;
+4) fonti [doc#chunk].
