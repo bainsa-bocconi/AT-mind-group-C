@@ -1,101 +1,48 @@
-import json
-from pathlib import Path
-from typing import Dict
-from ...pii.redact import mask as pii_mask
-from ...retriever.core import search
-from ...llm import llm
-
-TEMPLATE = Path("at_mind/contracts/templates/vehicle_purchase_v1.md").read_text(encoding="utf-8")
-
-def _render_template(template: str, data: Dict) -> str:
-    def get(path, default=""):
-        cur = data
-        for k in path.split("."):
-            cur = cur.get(k, {}) if isinstance(cur, dict) else {}
-        if isinstance(cur, list):
-            return ", ".join(map(str, cur))
-        return str(cur) if cur else default
-
-    customer_full = get("customer.full_name", "")
-    customer_email = get("customer.email", "")
-    customer_phone = get("customer.phone", "")
-
-
-    if customer_email:
-        customer_email = pii_mask(customer_email)
-    if customer_phone:
-        customer_phone = pii_mask(customer_phone)
-
-    mapping = {
-        "customer.full_name": customer_full,
-        "customer.email": customer_email,
-        "customer.phone": customer_phone,
-        "meta.contract_date": get("meta.contract_date"),
-        "vehicle.make": get("vehicle.make"),
-        "vehicle.model": get("vehicle.model"),
-        "vehicle.version": get("vehicle.version"),
-        "vehicle.year": get("vehicle.year"),
-        "pricing.list_price": get("pricing.list_price"),
-        "pricing.discounts": get("pricing.discounts"),
-        "pricing.trade_in_value": get("pricing.trade_in_value"),
-        "pricing.extras": get("pricing.extras"),
-        "finance.plan_name": get("finance.plan_name"),
-        "finance.apr": get("finance.apr"),
-        "finance.months": get("finance.months"),
-        "warranty.name": get("warranty.name"),
-        "warranty.months": get("warranty.months"),
-        "special_terms": data.get("special_terms", ""),
-        "legal_block": data.get("legal_block", ""),
-    }
-
-    out = template
-    for k, v in mapping.items():
-        out = out.replace("{{" + k + "}}", v)
-
-
-    lines = []
-    for line in out.splitlines():
-        lstrip = line.strip().lower()
-        if lstrip.startswith("cliente:") and not customer_full:
-            continue
-        if lstrip.startswith("contatto:") and (not customer_email and not customer_phone):
-            continue
-
-        if "{{" in line and "}}" in line:
-            continue
-        lines.append(line)
-    return "\n".join(lines)
+from ...guard import ensure_in_scope
+from ...scoring import compute_confidence, predict_negotiation_impact
+from ...audit import log_usage
 
 def run(quote: Dict) -> Dict:
-
     if "notes" in quote and isinstance(quote["notes"], str):
         quote["notes"] = pii_mask(quote["notes"])
-
 
     v = quote.get("vehicle", {}) or {}
     f = quote.get("finance", {}) or {}
     w = quote.get("warranty", {}) or {}
-
     q = f"{v.get('make','')} {v.get('model','')} {v.get('version','')} financing {f.get('months','')} apr {f.get('apr','')} garanzia {w.get('months','')}"
-    ctx = search(q, skill="contract", top_k=8)
+
+    hits = search(q, skill="contract", top_k=8)
+    ctx = [h if isinstance(h, dict) else {"chunk_id": h[0], "text": h[1], "metadata": h[2], "score": h[3]} for h in hits]
+    scores = [c["score"] for c in ctx]
     context_str = "\n\n".join([f"[{c['chunk_id']}] {c['text'][:400]}" for c in ctx])
 
-    user_prompt = (
-        "CONTESTO:\n" + context_str +
-        "\n\nQUOTE:\n" + json.dumps(quote, ensure_ascii=False) +
-        "\n\nRICHIESTA: produce special_terms e legal_block in modo conciso e operativo."
+    status, _ = ensure_in_scope(json.dumps(quote, ensure_ascii=False), ["pricing","product","process","brand"], scores)
+    conf = compute_confidence(scores, context_str, json.dumps(quote, ensure_ascii=False))
+
+    if status != "ok":
+        impact = predict_negotiation_impact("contract", "FUORI AMBITO", context_str, conf["overall"])
+        log_usage(skill="contract", user_input=json.dumps(quote, ensure_ascii=False), status=status,
+                  confidence=conf, evidence=[c["chunk_id"] for c in ctx],
+                  response_preview="", predicted_impact=impact)
+        return {"status": status, "confidence": conf, "contract_markdown": None, "evidence": [c["chunk_id"] for c in ctx]}
+
+    system = open("at_mind/prompts/system.it.txt", encoding="utf-8").read()
+    user = (
+        "Contesto (fonti RAG con ID):\n" + context_str +
+        "\n\nPreventivo (JSON):\n" + json.dumps(quote, ensure_ascii=False) +
+        "\n\nCompito: estrai 'special_terms' e 'legal_block'. Rispondi in JSON con chiavi: "
+        "special_terms, legal_block, placeholders_missing (array). Stile: professionale e gentile; sintetico e operativo."
     )
-    _ = llm.generate(system_prompt="", user_prompt=user_prompt)
+    raw = llm.generate(system_prompt=system, user_prompt=user, json_mode=True)
+    payload = {"special_terms":"", "legal_block":"", "placeholders_missing":[]}
+    try:
+        payload.update(json.loads(raw))
+    except Exception:
+        pass
 
-
-    result = {
-        "special_terms": "(demo) Vedi promozione e condizioni di finanziamento applicabili.",
-        "legal_block": "(demo) Clausole standard su recesso, consegna, garanzia.",
-        "placeholders_missing": []
-    }
-
-    md = _render_template(TEMPLATE, {**quote, **result})
-    return {
-        "contract_markdown": md,
-        "evidence": [c["chunk_id"] for c in ctx],
-    }
+    md = _render_template(TEMPLATE, {**quote, **payload})
+    impact = predict_negotiation_impact("contract", md, context_str, conf["overall"])
+    log_usage(skill="contract", user_input=json.dumps(quote, ensure_ascii=False), status="ok",
+              confidence=conf, evidence=[c["chunk_id"] for c in ctx],
+              response_preview=md, predicted_impact=impact)
+    return {"status": "ok", "confidence": conf, "contract_markdown": md, "evidence": [c["chunk_id"] for c in ctx]}
