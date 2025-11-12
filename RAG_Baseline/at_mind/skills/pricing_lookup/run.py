@@ -7,7 +7,11 @@ from ...audit import log_usage
 
 def run(query: str) -> dict:
     hits = search(query, skill="pricing_lookup", top_k=6)
-    ctx = [h if isinstance(h, dict) else {"chunk_id": h[0], "text": h[1], "metadata": h[2], "score": h[3]} for h in hits]
+
+    ctx = [
+        h if isinstance(h, dict) else {"chunk_id": h[0], "text": h[1], "metadata": h[2], "score": h[3]}
+        for h in hits
+    ]
     scores = [c["score"] for c in ctx]
     context_str = "\n\n".join([f"[{c['chunk_id']}] {c['text'][:500]}" for c in ctx])
 
@@ -24,13 +28,20 @@ def run(query: str) -> dict:
                   evidence=ans["evidence"], response_preview=json.dumps(ans), predicted_impact=impact)
         return {"status": status, "confidence": conf, "result": ans}
 
+
     system = open("at_mind/prompts/system.it.txt", encoding="utf-8").read()
     user = (
         f"Query: {query}\nContesto:\n{context_str}\n"
         "Rispondi SOLO in JSON con chiavi: price, currency, promo, apr, months, valid_from, valid_to, evidence (array di ID [doc#chunk]). "
         "Stile: professionale e gentile; sintetico."
     )
-    raw = llm.generate(system_prompt=system, user_prompt=user, json_mode=True)
+
+
+    try:
+        raw = llm.generate(system_prompt=system, user_prompt=user, json_mode=True) 
+    except TypeError:
+        raw = llm.generate(system_prompt=system, user_prompt=user) 
+
     try:
         data = json.loads(raw)
     except Exception:
