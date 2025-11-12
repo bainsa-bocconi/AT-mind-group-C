@@ -1,63 +1,101 @@
-mport json
+import json
 from pathlib import Path
 from typing import Dict
+from ...pii.redact import mask as pii_mask
 from ...retriever.core import search
 from ...llm import llm
 
-
 TEMPLATE = Path("at_mind/contracts/templates/vehicle_purchase_v1.md").read_text(encoding="utf-8")
 
-
 def _render_template(template: str, data: Dict) -> str:
+    def get(path, default=""):
+        cur = data
+        for k in path.split("."):
+            cur = cur.get(k, {}) if isinstance(cur, dict) else {}
+        if isinstance(cur, list):
+            return ", ".join(map(str, cur))
+        return str(cur) if cur else default
 
-out = template
-def rep(key_path: str, default: str = ""):
-keys = key_path.split('.')
-cur = data
-for k in keys:
-cur = cur.get(k, {}) if isinstance(cur, dict) else {}
-return str(cur) if cur else default
+    customer_full = get("customer.full_name", "")
+    customer_email = get("customer.email", "")
+    customer_phone = get("customer.phone", "")
 
-out = out.replace("{{customer.full_name}}", rep("customer.full_name"))
-out = out.replace("{{customer.email}}", rep("customer.email"))
-out = out.replace("{{customer.phone}}", rep("customer.phone"))
-out = out.replace("{{meta.contract_date}}", rep("meta.contract_date"))
-out = out.replace("{{vehicle.make}}", rep("vehicle.make"))
-out = out.replace("{{vehicle.model}}", rep("vehicle.model"))
-out = out.replace("{{vehicle.version}}", rep("vehicle.version"))
-out = out.replace("{{vehicle.year}}", rep("vehicle.year"))
-out = out.replace("{{pricing.list_price}}", rep("pricing.list_price"))
-out = out.replace("{{pricing.discounts}}", rep("pricing.discounts"))
-out = out.replace("{{pricing.trade_in_value}}", rep("pricing.trade_in_value"))
-out = out.replace("{{pricing.extras}}", rep("pricing.extras"))
-out = out.replace("{{finance.plan_name}}", rep("finance.plan_name"))
-out = out.replace("{{finance.apr}}", rep("finance.apr"))
-out = out.replace("{{finance.months}}", rep("finance.months"))
-out = out.replace("{{warranty.name}}", rep("warranty.name"))
-out = out.replace("{{warranty.months}}", rep("warranty.months"))
-return out
 
+    if customer_email:
+        customer_email = pii_mask(customer_email)
+    if customer_phone:
+        customer_phone = pii_mask(customer_phone)
+
+    mapping = {
+        "customer.full_name": customer_full,
+        "customer.email": customer_email,
+        "customer.phone": customer_phone,
+        "meta.contract_date": get("meta.contract_date"),
+        "vehicle.make": get("vehicle.make"),
+        "vehicle.model": get("vehicle.model"),
+        "vehicle.version": get("vehicle.version"),
+        "vehicle.year": get("vehicle.year"),
+        "pricing.list_price": get("pricing.list_price"),
+        "pricing.discounts": get("pricing.discounts"),
+        "pricing.trade_in_value": get("pricing.trade_in_value"),
+        "pricing.extras": get("pricing.extras"),
+        "finance.plan_name": get("finance.plan_name"),
+        "finance.apr": get("finance.apr"),
+        "finance.months": get("finance.months"),
+        "warranty.name": get("warranty.name"),
+        "warranty.months": get("warranty.months"),
+        "special_terms": data.get("special_terms", ""),
+        "legal_block": data.get("legal_block", ""),
+    }
+
+    out = template
+    for k, v in mapping.items():
+        out = out.replace("{{" + k + "}}", v)
+
+
+    lines = []
+    for line in out.splitlines():
+        lstrip = line.strip().lower()
+        if lstrip.startswith("cliente:") and not customer_full:
+            continue
+        if lstrip.startswith("contatto:") and (not customer_email and not customer_phone):
+            continue
+
+        if "{{" in line and "}}" in line:
+            continue
+        lines.append(line)
+    return "\n".join(lines)
 
 def run(quote: Dict) -> Dict:
-q = f"{quote['vehicle']['make']} {quote['vehicle']['model']} {quote['vehicle']['version']} financing {quote['finance']['months']} apr {quote['finance']['apr']} garanzia {quote['warranty']['months']}"
-ctx = search(q, skill="contract", top_k=8)
-context_str = "\n\n".join([f"[{c['chunk_id']}] {c['text'][:400]}" for c in ctx])
+
+    if "notes" in quote and isinstance(quote["notes"], str):
+        quote["notes"] = pii_mask(quote["notes"])
 
 
+    v = quote.get("vehicle", {}) or {}
+    f = quote.get("finance", {}) or {}
+    w = quote.get("warranty", {}) or {}
 
-user_prompt = f"CONTESTO:\n{context_str}\n\nQUOTE:\n{json.dumps(quote, ensure_ascii=False)}\n\nRICHIESTA: produce special_terms e legal_block."
-out = llm.generate(system_prompt="", user_prompt=user_prompt)
+    q = f"{v.get('make','')} {v.get('model','')} {v.get('version','')} financing {f.get('months','')} apr {f.get('apr','')} garanzia {w.get('months','')}"
+    ctx = search(q, skill="contract", top_k=8)
+    context_str = "\n\n".join([f"[{c['chunk_id']}] {c['text'][:400]}" for c in ctx])
+
+    user_prompt = (
+        "CONTESTO:\n" + context_str +
+        "\n\nQUOTE:\n" + json.dumps(quote, ensure_ascii=False) +
+        "\n\nRICHIESTA: produce special_terms e legal_block in modo conciso e operativo."
+    )
+    _ = llm.generate(system_prompt="", user_prompt=user_prompt)
 
 
-result = {
-"special_terms": "(demo) Vedi promozione Panda 2023 e condizioni finanziamento.",
-"legal_block": "(demo) Clausole standard su recesso, consegna, garanzia.",
-"placeholders_missing": []
-}
+    result = {
+        "special_terms": "(demo) Vedi promozione e condizioni di finanziamento applicabili.",
+        "legal_block": "(demo) Clausole standard su recesso, consegna, garanzia.",
+        "placeholders_missing": []
+    }
 
-
-md = _render_template(TEMPLATE, {**quote, **result})
-return {
-"contract_markdown": md,
-"evidence": [c["chunk_id"] for c in ctx],
-}
+    md = _render_template(TEMPLATE, {**quote, **result})
+    return {
+        "contract_markdown": md,
+        "evidence": [c["chunk_id"] for c in ctx],
+    }
