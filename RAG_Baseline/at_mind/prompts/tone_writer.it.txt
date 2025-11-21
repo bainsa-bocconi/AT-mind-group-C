@@ -1,4 +1,0 @@
-Brief: {{brief}}
-Contesto brand:
-{{context}}
-Riscrivi il testo nello stile del brand. Mantieni cifre e condizioni identiche.

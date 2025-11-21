@@ -1,4 +1,0 @@
-Domanda: {{question}}
-Contesto RAG:
-{{context}}
-Rispondi in 5-8 frasi massime, elencando i passaggi operativi. Specifica versione e validità quando presenti.

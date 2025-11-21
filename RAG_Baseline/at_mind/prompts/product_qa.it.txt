@@ -1,4 +1,0 @@
-Domanda: {{question}}
-Contesto RAG:
-{{context}}
-Rispondi citando le fonti [doc#chunk] e limita la risposta a 5 frasi.

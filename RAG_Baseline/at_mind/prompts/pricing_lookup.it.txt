@@ -1,5 +1,0 @@
-Query: {{query}}
-Contesto RAG:
-{{context}}
-Produci un JSON:
-{"price":"...","currency":"EUR","promo":"...","apr":"...","months":0,"valid_from":"YYYY-MM-DD","valid_to":"YYYY-MM-DD","evidence":["doc#1","doc#2"]}
