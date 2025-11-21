@@ -1,29 +1,44 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from vllm import LLM, SamplingParams
+import chromadb
+from chromadb.utils import embedding_functions
+from sentence_transformers import SentenceTransformer
+import torch #for GPU check
+from dotenv import load_dotenv
+import json
+#----------------------------------------------------------
+from .models import ChatRequest, ChatResponse
+from .servicesvllm import init_vllm, call_llama_inference
+#-----------------------------------------------------------
 
-app = FastAPI(title="AT Mind – Group C")
+app = FastAPI()
+init_vllm() # from servicesvllm.py
 
-class AssistRequest(BaseModel):
-    query: str
-    quote_id: str | None = None
+# ----------load system prompt from another file-------------
 
-class AssistResponse(BaseModel):
-    json_payload: dict
-    markdown: str
+def load_sys_prompt():
+    with open("systemprompt.md") as f:
+        return f.read()
+system_prompt = load_sys_prompt()
 
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
+# ------------------- ChromaDB Setup -----------------------
 
-@app.post("/assist", response_model=AssistResponse)
-def assist(req: AssistRequest):
-    payload = {
-        "quote_id": req.quote_id or "N/A",
-        "suggested_actions": ["Follow up with financing details"],
-        "risks": ["Customer uncertain about add-ons"],
-        "followup_message": "Hi! Following up on your quote..."
-    }
-    markdown = f"### Summary for `{payload['quote_id']}`\n- Suggested action: follow up\n- Risk: uncertainty"
-    return AssistResponse(json_payload=payload, markdown=markdown)
+chroma_client = chromadb.Client()
+chroma_collection = chroma_client.get_or_create_collection("dataset") #need to implement this so that leads to the dataset 
+embedding_func = embedding_functions.DefaultEmbeddingFunction()
+
+# --------------------app instances-------------------------
+    
+@app.get("/")
+async def root():
+    return 0
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request:ChatRequest):
+    llm_output = call_llama_inference(prompt=request.prompt)
+    return ChatResponse(
+        response=llm_output["response"],
+        confidence=llm_output["confidence"],
+        reasoning=llm_output["reasoning"]
+    )
 
 
