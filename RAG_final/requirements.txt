@@ -6,3 +6,4 @@ requests
 faiss-cpu
 sentence-transformers
 numpy
+chromadb
