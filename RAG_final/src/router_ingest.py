@@ -1,7 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Query, Body
-from src.router_chat import get_store  # riusa lo stesso store in RAM
-
+from src.router_chat import get_store 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 @router.post("/")
@@ -14,7 +13,8 @@ def ingest(
     Aggiunge testi alla base effimera della sessione.
     Usa `clear=true` per ripartire da zero.
     """
-    store = get_store(session_id)
+    stores[session_id] = EphemeralStore(session_id)
+
 
     if clear:
         from src.retriever import EphemeralStore
