@@ -28,7 +28,7 @@ def chat(
         return {"blocked": True, "message": block}
 
    
-    store = get_store(session_id)
+    store = EphemeralStore(session_id)
     if store.size == 0:
         return {"error": "Nessun documento indicizzato. Usa /ingest prima di /chat."}
 
