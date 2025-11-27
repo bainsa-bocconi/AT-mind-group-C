@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Body
-from src.retriever import EphemeralStore
+from src.retriever_chroma import HybridStore
 from src.guardrails import hard_block
 from src.prompts import SYSTEM, INSIGHT_TASK
 from src.llm_local import generate
@@ -8,12 +8,11 @@ from src.schema import parse_and_validate_insights
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-stores: dict[str, EphemeralStore] = {}
+stores: dict[str, HybridStore] = {}
 
-
-def get_store(session_id: str) -> EphemeralStore:
+def get_store(session_id: str) -> HybridStore:
     if session_id not in stores:
-        stores[session_id] = EphemeralStore()
+        stores[session_id] = HybridStore(session_id)
     return stores[session_id]
 
 
