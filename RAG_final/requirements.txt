@@ -3,7 +3,7 @@ uvicorn[standard]
 pydantic>=2
 python-dotenv
 requests
-faiss-cpu
 sentence-transformers
 numpy
 chromadb
+
