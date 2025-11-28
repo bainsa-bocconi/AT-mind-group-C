@@ -4,3 +4,20 @@ __pycache__/
 .env
 at_mind/data/processed/
 .DS_Store
+
+
+# Ignore vector DB (Chroma)
+chroma/
+chroma/*
+
+# Ignore real survey data
+excel_data/
+Data/*.xlsx
+
+# Ignore Python venv
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
