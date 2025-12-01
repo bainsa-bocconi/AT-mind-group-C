@@ -1,34 +1,34 @@
 from typing import List, Optional
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, Query
 
-from src.router_chat import get_store, stores  
-from src.retriever_chroma import HybridStore   
+from src.router_chat import get_store, stores
+from src.retriever_chroma import HybridStore
+
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
-
-@router.post("/")
+@router.get("/")
 def ingest(
-    session_id: str = Query(..., description="Identificatore della sessione"),
-    docs: List[str] = Body(..., description="Lista di testi: email, messaggi, note, offerte"),
+    session_id: str = Query(..., description="Session ID"),
+    docs: List[str] = Query(
+        ..., 
+        description="Lista di testi (usa ?docs=...&docs=... per più elementi)"
+    ),
     clear: Optional[bool] = Query(
         False,
-        description="Se True, resetta la base della sessione prima di indicizzare",
+        description="Se True, resetta la base della sessione prima di indicizzare"
     ),
 ):
     """
-    Aggiunge testi alla base di sessione (parte 'session' del retriever ibrido).
-    Usa `clear=true` per ripartire da zero per quella sessione.
+    Aggiunge testi alla base di sessione tramite GET.
     """
-
 
     if clear:
         stores[session_id] = HybridStore(session_id)
 
-   
     store = get_store(session_id)
 
-   
-    if not docs or not any(s.strip() for s in docs):
+    docs = [d.strip() for d in docs if d and d.strip()]
+    if not docs:
         return {"ok": False, "error": "Nessun testo valido fornito."}
 
     added = store.add_session_docs(docs)
@@ -38,4 +38,3 @@ def ingest(
         "chunks_added": added,
         "session_size": store.session_size,
     }
-
