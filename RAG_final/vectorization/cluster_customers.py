@@ -32,7 +32,7 @@ def load_respondent_embeddings():
     coll = client.get_collection(RESP_TEXT_COLL)
 
     print(f"[INFO] Fetching embeddings from collection '{RESP_TEXT_COLL}'...")
-    data = coll.get(include=["embeddings", "metadatas", "ids"])
+    data = coll.get(include=["embeddings", "metadatas"])
 
     ids = data["ids"]
     embs = data["embeddings"]
