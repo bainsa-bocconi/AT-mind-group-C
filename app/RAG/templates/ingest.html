@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Ingestion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .message.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .info-box {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Document Ingestion - paste here the conversation with the client</h1>
+        <p class="subtitle">Add documents to your RAG session</p>
+        
+        <div class="info-box">
+            💡 Enter one document per line, or paste multiple documents separated by blank lines.
+        </div>
+        
+        <form id="ingestForm">
+            <div class="form-group">
+                <label for="sessionId">Session ID *</label>
+                <input 
+                    type="text" 
+                    id="sessionId" 
+                    name="sessionId" 
+                    placeholder="e.g., user-session-1"
+                    required
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="docs">Documents *</label>
+                <textarea 
+                    id="docs" 
+                    name="docs" 
+                    placeholder="Paste your documents here. Each line will be treated as a separate document."
+                    required
+                ></textarea>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="clear" name="clear">
+                <label for="clear">Clear previous documents (reset session)</label>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-submit">Ingest Documents</button>
+                <button type="reset" class="btn-reset">Clear Form</button>
+            </div>
+        </form>
+        
+        <div id="message" class="message"></div>
+        <div style="margin-top: 40px; padding-top: 40px; border-top: 1px solid #ddd; text-align: center;">
+            <p style="color: #666; margin-bottom: 15px;">Ready to chat with your documents?</p>
+                <button type="button" onclick="goToChat()" style="
+                    padding: 12px 24px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(102, 126, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    Go to Chat →
+                </button>
+
+                <script>
+            function goToChat() {
+            const sessionId = document.getElementById('sessionId').value.trim();
+            if (!sessionId) {
+                alert('Please enter a session ID first');
+                return;
+            }
+            localStorage.setItem('rag_session_id', sessionId);
+            window.location.href = '/chat/?session_id=' + encodeURIComponent(sessionId);
+            }
+
+</script>
+
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('ingestForm');
+        const messageDiv = document.getElementById('message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const sessionId = document.getElementById('sessionId').value.trim();
+            const docsText = document.getElementById('docs').value.trim();
+            const clear = document.getElementById('clear').checked;
+
+            // Parse documents: split by newline and filter empty lines
+            const docs = docsText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            if (!sessionId) {
+                showMessage('Session ID is required.', 'error');
+                return;
+            }
+
+            if (docs.length === 0) {
+                showMessage('Please enter at least one document.', 'error');
+                return;
+            }
+
+            showMessage('<span class="loading-spinner"></span>Ingesting documents...', 'loading');
+
+            try {
+                const response = await fetch('/ingest/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        docs: docs,
+                        clear: clear,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.ok) {
+                    showMessage(
+                        `✅ Success! Added ${result.chunks_added} chunks. Session size: ${result.session_size}.`,
+                        'success'
+                    );
+                    form.reset();
+                } else {
+                    const errorMsg = result.error || 'Unknown error occurred.';
+                    showMessage(`❌ Error: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Network error: ${error.message}`, 'error');
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.innerHTML = text;
+            messageDiv.className = `message ${type}`;
+        }
+    </script>
+</body>
+</html>
