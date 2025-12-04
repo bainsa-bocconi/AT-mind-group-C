@@ -1,9 +1,0 @@
-fastapi
-uvicorn[standard]
-pydantic>=2
-python-dotenv
-requests
-sentence-transformers
-numpy
-chromadb
-
