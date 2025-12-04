@@ -1,0 +1,30 @@
+dati importanti:
+
+da leadV2:
+- intent per tipologia
+- intent per marca/modello
+- prezzo per modello
+
+da exit poll, confrontare con soddisfazione generale:
+- aver ricevuto il preventivo
+- finanziamento, noleggio, leasing
+- aver ricevuto valutazione usato
+
+da survey vendite, confrontare con overall complessivo:
+- test drive
+- k words per overall >= 9 o <=5
+
+Your model can make predictions using your database (ChromaDB) by following a standard "retrieval-augmented generation" workflow: first, search your vector database to find the most relevant knowledge for the user’s query, then send both the original query and the top results (contexts) to your LLM (via Hugging Face Inference API), and return the LLM's decision as your prediction.​
+
+How to Integrate ChromaDB with Your LLM App
+Index Your Data
+Store (ingest) your documents into ChromaDB as vector embeddings, so you can search them later by similarity. Use an endpoint (like your ingest_data function) to add documents and their metadata to the database.​
+
+Query for Relevant Context
+When a user makes a request, use a sentence-transformer to generate an embedding for their query, and search ChromaDB for the closest documents. Retrieve the top-k documents (snippets) most semantically similar to the input.
+
+Construct the LLM Prompt
+Take the user's question and the matching retrieved documents (contexts), and assemble a prompt for your LLM that includes both—the context and the query. This helps the LLM make decisions based on both its pre-trained knowledge and your private data.​
+
+Send to LLM and Return Decision
+Call the Hugging Face Llama 3.2 endpoint with the constructed prompt. Parse the LLM response as needed (ensure your output format includes message, confidence, and reasoning). Return this structured response to your frontend or user
