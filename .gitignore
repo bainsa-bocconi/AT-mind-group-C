@@ -13,6 +13,8 @@ chroma/*
 # Ignore real survey data
 excel_data/
 Data/*.xlsx
+vectorizer/
+vector.py
 
 # Ignore Python venv
 .venv/
