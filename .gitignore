@@ -27,3 +27,6 @@ Thumbs.db
 RAG_final/vectorization/Data/
 
  
+ml_outputs/
+RAG_final/vectorization/ml_outputs
+
