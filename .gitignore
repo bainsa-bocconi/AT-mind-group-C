@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
 .venv/
-.env
 at_mind/data/processed/
 .DS_Store
 
